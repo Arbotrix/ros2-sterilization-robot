@@ -136,4 +136,4 @@ ros2 topic pub -1 /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
 
 ## License
 
-Add your license here.
+This project is released under the MIT License. See [`LICENSE`](LICENSE) for details.
