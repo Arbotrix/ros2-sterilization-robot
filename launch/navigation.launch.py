@@ -25,26 +25,11 @@ def generate_launch_description():
             executable='robot_state_publisher',
             name='robot_state_publisher',
             output='screen',
-            parameters=[{
-                'use_sim_time': True,
-                'robot_description': robot_description_config
-            }]
+            parameters=[{'use_sim_time': True, 'robot_description': robot_description_config}]
         ),
         
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(nav2_bringup_dir, 'launch', 'bringup_launch.py')),
-            launch_arguments={
-                'map': map_yaml_file,
-                'use_sim_time': 'true'
-            }.items()
-        ),
-        
-        Node(
-            package='rviz2',
-            executable='rviz2',
-            name='rviz2',
-            arguments=['-d', os.path.join(nav2_bringup_dir, 'rviz', 'nav2_default_view.rviz')],
-            parameters=[{'use_sim_time': True}],
-            output='screen'
+            launch_arguments={'map': map_yaml_file, 'use_sim_time': 'true'}.items()
         )
     ])

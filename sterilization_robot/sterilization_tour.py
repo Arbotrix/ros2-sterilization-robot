@@ -4,7 +4,6 @@ from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 from std_msgs.msg import Bool
 from visualization_msgs.msg import Marker
-from sensor_msgs.msg import LaserScan
 
 class SterilizationTour(Node):
     def __init__(self):
@@ -14,16 +13,11 @@ class SterilizationTour(Node):
         self.uvc_pub = self.create_publisher(Bool, '/uvc_light_status', 10)
         self.marker_pub = self.create_publisher(Marker, '/sterilization_coverage', 10)
         
-        # --- NEW: Subscribe to the LiDAR scan ---
-        self.scan_sub = self.create_subscription(LaserScan, '/scan', self.scan_callback, 10)
-        
         self.waypoints = [
             (1.0, 0.5, 1.0),
             (-1.5, 1.0, 1.0)
         ]
         self.current_wp_index = 0
-        
-        # State variables for safety logic
         self.is_sterilizing = False
         self.sterilization_timer = None
 
@@ -71,14 +65,14 @@ class SterilizationTour(Node):
         self.uvc_pub.publish(uvc_msg)
         self.publish_coverage_marker(state='ACTIVE')
         
-        # Start a 10-second background timer instead of blocking with sleep
+        # 10-second sterilization timer
         self.sterilization_timer = self.create_timer(10.0, self.finish_sterilization)
 
     def finish_sterilization(self):
-        # This only runs if the 10 seconds finish safely without LiDAR interruption
         if self.is_sterilizing:
             self.is_sterilizing = False
-            self.sterilization_timer.cancel()
+            if self.sterilization_timer:
+                self.sterilization_timer.cancel()
             
             # Turn lights OFF
             uvc_msg = Bool()
@@ -87,38 +81,6 @@ class SterilizationTour(Node):
             self.publish_coverage_marker(state='FINISHED')
             self.get_logger().info('Sterilization complete. Moving on.')
             
-            self.current_wp_index += 1
-            self.send_goal()
-
-    def scan_callback(self, msg):
-        # Only check safety if the UV lights are currently ON
-        if not self.is_sterilizing:
-            return
-            
-        # Ignore invalid LiDAR readings (0.0 or infinity)
-        valid_ranges = [r for r in msg.ranges if msg.range_min < r < msg.range_max]
-        if not valid_ranges:
-            return
-            
-        closest_obstacle = min(valid_ranges)
-        
-        # --- SAFETY TRIGGER: If object is closer than 1.0 meter ---
-        if closest_obstacle < 0.5:
-            self.get_logger().warn(f'SAFETY TRIGGER! Object detected at {closest_obstacle:.2f}m. Shutting off UV-C!')
-            
-            self.is_sterilizing = False
-            if self.sterilization_timer:
-                self.sterilization_timer.cancel()
-            
-            # Instantly turn lights OFF
-            uvc_msg = Bool()
-            uvc_msg.data = False
-            self.uvc_pub.publish(uvc_msg)
-            
-            # Paint a red warning circle on the map
-            self.publish_coverage_marker(state='WARNING')
-            
-            # Move to next waypoint immediately
             self.current_wp_index += 1
             self.send_goal()
 
@@ -144,9 +106,6 @@ class SterilizationTour(Node):
         elif state == 'FINISHED':
             marker.color.a = 0.3
             marker.color.r, marker.color.g, marker.color.b = 0.0, 1.0, 0.0 # Green
-        elif state == 'WARNING':
-            marker.color.a = 0.8
-            marker.color.r, marker.color.g, marker.color.b = 1.0, 0.0, 0.0 # Red
             
         self.marker_pub.publish(marker)
 
