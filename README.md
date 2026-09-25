@@ -126,17 +126,6 @@ ros2 topic pub -1 /initialpose geometry_msgs/msg/PoseWithCovarianceStamped \
   "{header: {frame_id: 'map'}, pose: {pose: {position: {x: -2.0, y: 1.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}}"
 ```
 
-### Git push fails with `Permission denied (publickey)`
-
-**Cause:** No SSH key configured on the local machine.
-
-**Fix:** Switch the remote to HTTPS and authenticate with a Personal Access Token:
-
-```bash
-git remote set-url origin https://github.com/Arbotrix/ros2-sterilization-robot.git
-git push origin main
-```
-
 ## Architecture
 
 - **Perception:** simulated LiDAR (`base_scan`) + wheel odometry
